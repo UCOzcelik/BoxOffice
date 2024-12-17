@@ -1,8 +1,8 @@
 import pandas as pd
 
 # Datei laden
-input_file = 'data/MLWS_Movies_Datensatz.csv'
-output_file = 'data/movie_data.csv'
+input_file = '../data/MLWS_Movies_Datensatz.csv'
+output_file = '../data/movie_data.csv'
 
 try:
     # Daten laden mit Semikolon als Trennzeichen

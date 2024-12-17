@@ -5,7 +5,7 @@ import seaborn as sns
 
 def show_visualizations():
     # Daten laden
-    df = pd.read_csv('data/movie_data.csv')
+    df = pd.read_csv('../data/movie_data.csv')
 
     # Figure 1: Budget vs Box Office
     plt.figure(figsize=(10, 6))

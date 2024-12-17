@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Daten laden
-df = pd.read_csv('data/movie_data.csv')
+df = pd.read_csv('../data/movie_data.csv')
 print("Daten erfolgreich geladen!")
 
 # Feature Engineering

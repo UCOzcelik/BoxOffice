@@ -91,7 +91,7 @@ def get_valid_year():
 
 def get_valid_genre():
     # Genres aus der CSV-Datei laden
-    df = pd.read_csv('data/movie_data.csv')
+    df = pd.read_csv('../data/movie_data.csv')
     valid_genres = sorted(df['Genre'].unique())
 
     print("\nVerfügbare Genres:")
@@ -106,7 +106,7 @@ def get_valid_genre():
 
 def main():
     # Daten laden
-    df = pd.read_csv('data/movie_data.csv')
+    df = pd.read_csv('../data/movie_data.csv')
 
     # Visualisierungen erstellen
     create_visualizations(df)
