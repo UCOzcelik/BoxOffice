@@ -3,13 +3,18 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.linear_model import LinearRegression
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.linear_model import LinearRegression  # Import für LinearRegression
 
 # Daten laden
 df = pd.read_csv('../data/movie_data.csv')
 print("Daten erfolgreich geladen!")
+
+# Überprüfen auf NaN-Werte
+print("Überprüfen auf NaN-Werte:")
+print(df.isnull().sum())
+
+# NaN-Werte behandeln (z.B. durch Entfernen)
+df = df.dropna()  # Entfernt alle Zeilen mit NaN-Werten
 
 # Feature Engineering
 # 1. Logarithmische Transformationen
@@ -31,25 +36,26 @@ df['Director_Avg_Revenue'] = df.groupby('Director')['Box Office'].transform('mea
 df['Genre_Movie_Count'] = df.groupby('Genre')['Box Office'].transform('count')
 df['Director_Movie_Count'] = df.groupby('Director')['Box Office'].transform('count')
 
-# 5. Interaktions-Features
-df['Budget_Genre_Avg_Interaction'] = df['Budget'] * df['Genre_Avg_Revenue']
+# 5. Schauspieler Features
+df['Actor1_Avg_Revenue'] = df.groupby('Actor 1')['Box Office'].transform('mean')
 
 # Encoding für kategorische Variablen
 le = LabelEncoder()
 df['Genre_encoded'] = le.fit_transform(df['Genre'])
 df['Director_encoded'] = le.fit_transform(df['Director'])
+df['Actor1_encoded'] = le.fit_transform(df['Actor 1'])
 
 # Genre-Mapping speichern
 genre_mapping = dict(zip(df['Genre'], df['Genre_encoded']))
 
-# Feature-Liste
+# Feature-Liste anpassen
 features = [
     'Budget', 'Running time', 'Budget_log', 'Running_time_log',
     'Budget_per_minute', 'Budget_per_year', 'Genre_encoded',
     'Director_encoded', 'Release year', 'Is_High_Budget',
     'Is_Long_Movie', 'Is_Recent', 'Genre_Avg_Revenue',
     'Director_Avg_Revenue', 'Genre_Movie_Count', 'Director_Movie_Count',
-    'Budget_Genre_Avg_Interaction'
+    'Actor1_Avg_Revenue'
 ]
 
 # Daten vorbereiten
@@ -81,7 +87,7 @@ models = {
         min_samples_leaf=2,
         random_state=42
     ),
-    'Linear Regression': LinearRegression()
+    'Linear Regression': LinearRegression()  # Hier wird LinearRegression importiert
 }
 
 # Modelle trainieren und evaluieren
@@ -107,7 +113,6 @@ for name, model in models.items():
 print(f"\nBestes Modell: {best_model_name}")
 print(f"Bester Test R² Score: {best_score:.2f}")
 
-
 def predict_box_office(running_time, budget, genre, release_year):
     if genre not in genre_mapping:
         print(f"Warnung: Genre '{genre}' nicht im Trainingsdatensatz gefunden")
@@ -132,7 +137,7 @@ def predict_box_office(running_time, budget, genre, release_year):
         'Director_Avg_Revenue': df['Box Office'].mean(),  # Gesamtdurchschnitt für unbekannte Regisseure
         'Genre_Movie_Count': df[df['Genre'] == genre].shape[0],
         'Director_Movie_Count': 1,  # Default für neue Regisseure
-        'Budget_Genre_Avg_Interaction': budget * df[df['Genre'] == genre]['Box Office'].mean()
+        'Actor1_Avg_Revenue': df['Actor1_Avg_Revenue'].mean()  # Durchschnitt für unbekannte Schauspieler
     }
 
     # DataFrame erstellen
@@ -145,7 +150,6 @@ def predict_box_office(running_time, budget, genre, release_year):
     # Vorhersage
     prediction = best_model.predict(X_pred_scaled)
     return prediction[0]
-
 
 def predict_box_office_range(running_time, budget, genre, release_year):
     # Basis-Vorhersage
@@ -166,7 +170,6 @@ def predict_box_office_range(running_time, budget, genre, release_year):
         'box_office_range': (lower_bound, upper_bound),
         'profit_range': (min_profit, max_profit)
     }
-
 
 if __name__ == "__main__":
     print("\nFilm Box Office Vorhersage")

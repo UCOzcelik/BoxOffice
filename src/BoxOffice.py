@@ -1,150 +1,85 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from prediction import predict_box_office  # Hier ist die Korrektur
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+from prediction import predict_box_office_range  # Importiere die Vorhersagefunktion
 
+# Daten laden
+df = pd.read_csv('../data/movie_data.csv')
+print("Daten erfolgreich geladen!")
 
-def create_visualizations(df):
-    # Stil für die Plots setzen
-    plt.style.use('seaborn')
+# Überprüfen auf NaN-Werte
+print("Überprüfen auf NaN-Werte:")
+print(df.isnull().sum())
 
-    # Figure 1: Budget vs Box Office
-    plt.figure(figsize=(10, 6))
-    plt.scatter(df['Budget'], df['Box Office'], alpha=0.5)
-    plt.xlabel('Budget ($)')
-    plt.ylabel('Box Office ($)')
-    plt.title('Budget vs Box Office Earnings')
-    plt.show()
+# NaN-Werte behandeln (z.B. durch Entfernen)
+df = df.dropna()  # Entfernt alle Zeilen mit NaN-Werten
 
-    # Figure 2: Genre Distribution
-    plt.figure(figsize=(12, 6))
-    df['Genre'].value_counts().plot(kind='bar')
-    plt.title('Distribution of Movie Genres')
-    plt.xlabel('Genre')
-    plt.ylabel('Number of Movies')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+# Genre-Encoding
+le = LabelEncoder()
+df['Genre_encoded'] = le.fit_transform(df['Genre'])
 
-    # Figure 3: Average Earnings by Genre
-    plt.figure(figsize=(12, 6))
-    df.groupby('Genre')['Box Office'].mean().sort_values(ascending=False).plot(kind='bar')
-    plt.title('Average Box Office Earnings by Genre')
-    plt.xlabel('Genre')
-    plt.ylabel('Average Box Office ($)')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+# Genre-Mapping speichern
+genre_mapping = dict(zip(df['Genre'], df['Genre_encoded']))
 
-    # Figure 4: Release Year Distribution
-    plt.figure(figsize=(10, 6))
-    df['Release year'].hist(bins=30)
-    plt.title('Distribution of Release Years')
-    plt.xlabel('Release Year')
-    plt.ylabel('Number of Movies')
-    plt.show()
-
-    # Figure 5: Running Time vs Box Office
-    plt.figure(figsize=(10, 6))
-    plt.scatter(df['Running time'], df['Box Office'], alpha=0.5)
-    plt.xlabel('Running Time (minutes)')
-    plt.ylabel('Box Office ($)')
-    plt.title('Running Time vs Box Office Earnings')
-    plt.show()
-
-    # Figure 6: Correlation Matrix
-    plt.figure(figsize=(8, 6))
-    numeric_cols = ['Budget', 'Running time', 'Box Office', 'Release year']
-    correlation_matrix = df[numeric_cols].corr()
-    sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
-    plt.title('Correlation Matrix')
-    plt.tight_layout()
-    plt.show()
-
-
-def display_welcome():
-    print("\n=== Film Box Office Predictor ===")
-    print("Dieses Programm sagt voraus, wie viel Ihr Film an den Kinokassen einspielen wird.")
-
-
-def get_valid_float(prompt, min_value=0):
-    while True:
-        try:
-            value = float(input(prompt))
-            if value >= min_value:
-                return value
-            print(f"Bitte geben Sie einen Wert größer als {min_value} ein.")
-        except ValueError:
-            print("Bitte geben Sie eine gültige Zahl ein.")
-
-
-def get_valid_year():
-    while True:
-        try:
-            year = int(input("Erscheinungsjahr (2000-2030): "))
-            if 2000 <= year <= 2030:
-                return year
-            print("Bitte geben Sie ein Jahr zwischen 2000 und 2030 ein.")
-        except ValueError:
-            print("Bitte geben Sie ein gültiges Jahr ein.")
-
-
-def get_valid_genre():
-    # Genres aus der CSV-Datei laden
-    df = pd.read_csv('../data/movie_data.csv')
-    valid_genres = sorted(df['Genre'].unique())
-
+# Hauptprogramm für die Vorhersage
+if __name__ == "__main__":
+    print("\nFilm Box Office Vorhersage")
+    print("--------------------------")
     print("\nVerfügbare Genres:")
-    print(", ".join(valid_genres))
+    print(sorted(genre_mapping.keys()))
 
     while True:
-        genre = input("\nGenre: ").strip()
-        if genre in valid_genres:
-            return genre
-        print("Ungültiges Genre. Bitte wählen Sie aus der Liste oben.")
+        try:
+            title = input("\nFilmtitel: ")
+            running_time = float(input("Laufzeit (in Minuten): "))
+            budget = float(input("Budget (in Dollar): "))
+            genre = input("Genre (aus der Liste oben): ")
+            release_year = int(input("Erscheinungsjahr: "))
+            director = input("Regisseur: ")
+            actor1 = input("Schauspieler 1: ")
+            actor2 = input("Schauspieler 2: ")
+            actor3 = input("Schauspieler 3: ")
 
+            prediction = predict_box_office_range(
+                running_time=running_time,
+                budget=budget,
+                genre=genre,
+                release_year=release_year
+            )
 
-def main():
-    # Daten laden
-    df = pd.read_csv('../data/movie_data.csv')
+            if prediction is not None:
+                print(f"\nVorhersage für '{title}':")
+                print(f"Budget: ${budget:,.2f}")
+                print("\nGeschätzte Box Office Einnahmen:")
+                print(f"${prediction['box_office_range'][0]:,.2f} - ${prediction['box_office_range'][1]:,.2f}")
 
-    # Visualisierungen erstellen
-    create_visualizations(df)
+                print("\nGeschätzter Gewinn/Verlust:")
+                if prediction['profit_range'][0] < 0 and prediction['profit_range'][1] < 0:
+                    print(
+                        f"Erwarteter Verlust: ${abs(prediction['profit_range'][0]):,.2f} - ${abs(prediction['profit_range'][1]):,.2f}")
+                elif prediction['profit_range'][0] < 0 and prediction['profit_range'][1] > 0:
+                    print(f"Möglicher Verlust bis zu: ${abs(prediction['profit_range'][0]):,.2f}")
+                    print(f"Möglicher Gewinn bis zu: ${prediction['profit_range'][1]:,.2f}")
+                else:
+                    print(
+                        f"Erwarteter Gewinn: ${prediction['profit_range'][0]:,.2f} - ${prediction['profit_range'][1]:,.2f}")
 
-    display_welcome()
+                # Risikobewertung
+                risk_ratio = abs(prediction['profit_range'][1] - prediction['profit_range'][0]) / budget
+                if risk_ratio < 0.5:
+                    risk_level = "Niedrig"
+                elif risk_ratio < 1.0:
+                    risk_level = "Mittel"
+                else:
+                    risk_level = "Hoch"
+                print(f"\nRisikobewertung: {risk_level}")
 
-    while True:
-        print("\n--- Neue Vorhersage ---")
+        except ValueError as e:
+            print("\nFehler: Bitte geben Sie gültige Zahlen ein.")
+        except Exception as e:
+            print(f"\nFehler: {str(e)}")
 
-        # Benutzereingaben sammeln
-        title = input("\nFilmtitel: ").strip()
-        running_time = get_valid_float("Laufzeit (in Minuten): ")
-        budget = get_valid_float("Budget (in Dollar): ")
-        genre = get_valid_genre()
-        release_year = get_valid_year()
-
-        # Vorhersage machen
-        predicted_revenue = predict_box_office(
-            running_time=running_time,
-            budget=budget,
-            genre=genre,
-            release_year=release_year
-        )
-
-        # Ergebnisse anzeigen
-        if predicted_revenue is not None:
-            print(f"\nVorhersage für '{title}':")
-            print(f"Budget: ${budget:,.2f}")
-            print(f"Vorhergesagte Box Office Einnahmen: ${predicted_revenue:,.2f}")
-            profit = predicted_revenue - budget
-            print(f"Erwarteter {'Gewinn' if profit >= 0 else 'Verlust'}: ${abs(profit):,.2f}")
-
-        # Fragen ob weitere Vorhersage gewünscht
         if input("\nWeitere Vorhersage machen? (ja/nein): ").lower() != 'ja':
             break
 
-    print("\nProgramm beendet. Auf Wiedersehen!")
-
-
-if __name__ == "__main__":
-    main()
+    print("\nProgramm beendet.")

@@ -16,6 +16,9 @@ try:
         if df[column].dtype == 'object':
             df[column] = df[column].str.strip()
 
+    # Unerwünschte Spalten entfernen
+    df = df.drop(columns=['Actor 2', 'Actor 3'])  # Entfernen von Actor 2 und Actor 3
+
     # Numerische Spalten konvertieren
     df['Running time'] = pd.to_numeric(df['Running time'], errors='coerce')
     df['Budget'] = pd.to_numeric(df['Budget'], errors='coerce')
